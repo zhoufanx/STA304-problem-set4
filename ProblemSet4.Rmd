@@ -1,0 +1,332 @@
+---
+title: "A Prediction of the 2020 US Election"
+author: "Shuyu Duan,Fanxi Zhou, Feixue Han, Zhiang Chen"
+date: "2020-11-2"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+# Abstract
+The 2020 United States presidential election is scheduled for November 3, 2020. The result of it would impose a substantial influence on the USA and the world's economy as both presidential candidates have opposing views on the matters of pandemic and economic recovery plan. This study aims to predict the outcomes by using data from Democracy Fund and UCLA Nationscape dataset to build a binary logistic model. The findings include that the males are more likely to vote for Trump than the females, whereas the wealthy are more likely to vote for Biden than the poor. This study is significant since both candidates have to pay attention to their potential voters' needs in order to get elected in office for future terms.
+
+# Introduction
+The 2020 United States presidential election is scheduled for Tuesday, November 3, 2020. It will be the 59th presidential election for the USA. The US political system is dominated by just two parties, the Democratic Party and the Republican Party. The two major candidates and parties are Republican incumbent President Donald Trump and Democratic former Vice President Joe Biden. The US president has a huge influence on the lives of people who are domestic and abroad. In the US, US citizens who are over 18 years old have the right to vote for the president. Recently, according to the poll prediction of CBC, the overall supporting rate of Biden is higher than Trump. Biden has a high supported rate in some states such as WA, OR,CA and so on. When the next election is held on 3 November, everyone will know the outcome.
+
+In this survey, we analyzed subsets of survey and census which is part of ACE of UCLA and Nationscape Data Set. The American Community Survey (ACS) is a nationwide survey which provides communities with reliable and timely social, economic, housing, and demographic data. In the Census Bureau, at least two questionnaires were used to collect the census data. The form collected basic demographic information and detailed housing and socioeconomic information. The det
+
+# Data
+## Loading Data
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+library(tidyverse)
+library(grid)
+library(gridExtra)
+library(kableExtra)
+# Loading in the cleaned survey Data
+survey_data <- read_csv("survey_data.csv")
+
+# Loading in the cleaned census Data
+census_data <- read_csv("census_data.csv")
+```
+
+## Data Clean
+```{r}
+# sex
+survey_data$sex[survey_data$gender == "Female"] <- "female"
+survey_data$sex[survey_data$gender == "Male"] <- "male"
+
+# race
+survey_data$race[survey_data$race_ethnicity == "White"] <- "white"
+survey_data$race[survey_data$race_ethnicity == "Black, or African American"] <- "black/african american/negro"
+survey_data$race[survey_data$race_ethnicity == "Asian (Asian Indian)"] <- "other asian or pacific islander"
+survey_data$race[survey_data$race_ethnicity == "Asian (Vietnamese)"] <- "other asian or pacific islander"
+survey_data$race[survey_data$race_ethnicity == "Asian (Chinese)"] <- "chinese"
+survey_data$race[survey_data$race_ethnicity == "Asian (Korean)"] <- "other asian or pacific islander"
+survey_data$race[survey_data$race_ethnicity == "Asian (Japanese)"] <- "japanese"
+survey_data$race[survey_data$race_ethnicity == "Some other race"] <- "other race, nec"
+survey_data$race[survey_data$race_ethnicity == "Asian (Filipino)"] <- "other asian or pacific islander"
+survey_data$race[survey_data$race_ethnicity == "Asian (Other)"] <- "other asian or pacific islander"
+survey_data$race[survey_data$race_ethnicity == "Pacific Islander (Native Hawaiian)"] <- "other asian or pacific islander"
+survey_data$race[survey_data$race_ethnicity == "American Indian or Alaska Native"] <- "american indian or alaska native"
+survey_data$race[survey_data$race_ethnicity == "Pacific Islander (Other)"] <- "other asian or pacific islander"
+survey_data$race[survey_data$race_ethnicity == "Pacific Islander (Samoan)"] <- "other asian or pacific islander"
+survey_data$race[survey_data$race_ethnicity == "Pacific Islander (Guamanian)"] <- "other asian or pacific islander"
+
+# labforce
+survey_data$labforce[survey_data$employment == "Full-time employed"] <- "yes, in the labor force"
+survey_data$labforce[survey_data$employment == "Unemployed or temporarily on layoff"] <- "no, not in the labor force"
+survey_data$labforce[survey_data$employment == "Retired"] <- "no, not in the labor force"
+survey_data$labforce[survey_data$employment == "Student"] <- "no, not in the labor force"
+survey_data$labforce[survey_data$employment == "Homemaker"] <- "no, not in the labor force"
+survey_data$labforce[survey_data$employment == "Part-time employed"] <- "yes, in the labor force"
+survey_data$labforce[survey_data$employment == "Self-employed"] <- "yes, in the labor force"
+survey_data$labforce[survey_data$employment == "Permanently disabled"] <- "no, not in the labor force"
+survey_data$labforce[survey_data$employment == "Other:"] <- NA
+survey_data$labforce[is.na(survey_data$employment)] <- NA
+
+# education
+census_data$education[census_data$educd == "no schooling completed"] <- "3rd Grade or less"
+census_data$education[census_data$educd == "grade 1"] <- "3rd Grade or less"
+census_data$education[census_data$educd == "grade 3"] <- "3rd Grade or less"
+census_data$education[census_data$educd == "grade 6"] <- "Middle School - Grades 4 - 8"
+census_data$education[census_data$educd == "grade 7"] <- "Middle School - Grades 4 - 8"
+census_data$education[census_data$educd == "grade 8"] <- "Middle School - Grades 4 - 8"
+census_data$education[census_data$educd == "grade 9"] <- "Completed some high school"
+census_data$education[census_data$educd == "grade 10"] <- "Completed some high school"
+census_data$education[census_data$educd == "grade 11"] <- "Completed some high school"
+census_data$education[census_data$educd == "12th grade, no diploma"] <- "Completed some high school"
+census_data$education[census_data$educd == "regular high school diploma"] <- "High school graduate"
+census_data$education[census_data$educd == "ged or alternative credential"] <- "High school graduate"
+census_data$education[census_data$educd == "some college, but less than 1 year"] <- "Completed some college, but no degree"
+census_data$education[census_data$educd == "1 or more years of college credit, no degree"] <- "Completed some college, but no degree"
+census_data$education[census_data$educd == "associate's degree, type not specified"] <- "Associate Degree"
+census_data$education[census_data$educd == "nursery school, preschool"] <- "3rd Grade or less"
+census_data$education[census_data$educd == "grade 4"] <- "Middle School - Grades 4 - 8"
+census_data$education[census_data$educd == "grade 5"] <- "Middle School - Grades 4 - 8"
+census_data$education[census_data$educd == "kindergarten"] <- "3rd Grade or less"
+census_data$education[census_data$educd == "bachelor's degree"] <- "College Degree (such as B.A., B.S.)"
+census_data$education[census_data$educd == "grade 2"] <- "3rd Grade or less"
+census_data$education[census_data$educd == "master's degree"] <- "Masters degree"
+census_data$education[census_data$educd == "doctoral degree"] <- "Doctorate degree"
+census_data$education[census_data$educd == "professional degree beyond a bachelor's degree"] <- "Masters degree"
+survey_data$education[survey_data$education == "Other post high school vocational training"] <- "High school graduate"
+survey_data$education[survey_data$education == "Completed some graduate, but no degree"] <- "College Degree (such as B.A., B.S.)"
+
+# income_level
+# census_data
+quantile(census_data$inctot)
+census_data$income_level[census_data$inctot <13700] <- "0-25%"
+census_data$income_level[census_data$inctot >= 13700 & census_data$inctot < 31030] <- "25%-50%"
+census_data$income_level[census_data$inctot >= 31030 & census_data$inctot < 64000] <- "50%-75%"
+census_data$income_level[census_data$inctot >= 64000] <- "75%-100%"
+census_data$income_level[is.na(census_data$inctot )] <- NA
+
+#survey_data
+survey_data$household_income_bottom[survey_data$household_income == "$75,000 to $79,999"] <- 75000
+survey_data$household_income_bottom[survey_data$household_income == "$100,000 to $124,999"] <- 100000
+survey_data$household_income_bottom[survey_data$household_income == "$175,000 to $199,999"] <- 175000
+survey_data$household_income_bottom[survey_data$household_income == "$65,000 to $69,999"] <- 65000
+survey_data$household_income_bottom[survey_data$household_income == "Less than $14,999"] <- 0
+survey_data$household_income_bottom[survey_data$household_income == "$80,000 to $84,999"] <- 80000
+survey_data$household_income_bottom[survey_data$household_income == "$80,000 to $84,999"] <- 80000
+survey_data$household_income_bottom[survey_data$household_income == "$40,000 to $44,999"] <- 40000
+survey_data$household_income_bottom[survey_data$household_income == "$20,000 to $24,999"] <- 20000
+survey_data$household_income_bottom[survey_data$household_income == "$60,000 to $64,999"] <- 60000
+survey_data$household_income_bottom[survey_data$household_income == "$15,000 to $19,999"] <- 15000
+survey_data$household_income_bottom[survey_data$household_income == "$30,000 to $34,999"] <- 30000
+survey_data$household_income_bottom[is.na(survey_data$household_income)] <- NA
+survey_data$household_income_bottom[survey_data$household_income == "$150,000 to $174,999"] <- 150000
+survey_data$household_income_bottom[survey_data$household_income == "$85,000 to $89,999"] <- 85000
+survey_data$household_income_bottom[survey_data$household_income == "$90,000 to $94,999"] <- 90000
+survey_data$household_income_bottom[survey_data$household_income == "$45,000 to $49,999"] <- 45000
+survey_data$household_income_bottom[survey_data$household_income == "$200,000 to $249,999"] <- 200000
+survey_data$household_income_bottom[survey_data$household_income == "$95,000 to $99,999"] <- 95000
+survey_data$household_income_bottom[survey_data$household_income == "$55,000 to $59,999"] <- 55000
+survey_data$household_income_bottom[survey_data$household_income == "$25,000 to $29,999"] <- 25000
+survey_data$household_income_bottom[survey_data$household_income == "$35,000 to $39,999"] <- 35000
+survey_data$household_income_bottom[survey_data$household_income == "$125,000 to $149,999"] <- 125000
+survey_data$household_income_bottom[survey_data$household_income == "$50,000 to $54,999"] <- 50000
+survey_data$household_income_bottom[survey_data$household_income == "$70,000 to $74,999"] <- 70000
+survey_data$household_income_bottom[survey_data$household_income == "$250,000 and above"] <- 250000
+
+quantile(survey_data$household_income_bottom, na.rm = TRUE)
+survey_data$income_level[survey_data$household_income_bottom <20000] <- "0-25%"
+survey_data$income_level[survey_data$household_income_bottom >= 20000 & survey_data$household_income_bottom < 45000] <- "25%-50%"
+survey_data$income_level[survey_data$household_income_bottom >= 45000 & survey_data$household_income_bottom < 95000] <- "50%-75%"
+survey_data$income_level[survey_data$household_income_bottom >= 95000] <- "75%-100%"
+survey_data$income_level[is.na(survey_data$household_income_bottom)] <- NA
+
+# Data Selection
+census_data <- census_data %>% select(age, sex, race, labforce, education, income_level,n)
+survey_data <- survey_data %>% select(vote_biden, vote_trump,age, sex, race, labforce, education, income_level)
+survey_data<- na.omit(survey_data)
+census_data<- na.omit(census_data)
+
+#unique(census_data$sex)
+#unique(survey_data$sex)
+#unique(census_data$age)
+#unique(survey_data$age)
+#unique(census_data$race)
+#unique(survey_data$race)
+#unique(census_data$labforce)
+#unique(survey_data$labforce)
+#unique(census_data$education)
+#unique(survey_data$education)
+#unique(census_data$income_level)
+#unique(survey_data$income_level)
+```
+
+```{r,message=FALSE,warning=FALSE}
+par(mfrow=c(1,2))
+cdplot(as.factor(survey_data$vote_biden) ~ survey_data$age, col = c("tomato","skyblue"), border = 1, main = "Results for Biden", xlab = "Age", ylab = "Biden Vote Choice")
+cdplot(as.factor(survey_data$vote_trump) ~ survey_data$age, col = c("tomato","skyblue"), border = 1, main = "Results for Trump", xlab = "Age", ylab = "Trump Vote Choice")
+mtext("Figure 1: Age Distribution of Supporters", outer=TRUE,  cex=1,line=-22.5)
+
+plt1<-ggplot(data = survey_data) + 
+  geom_bar(mapping = aes(x = sex, fill = as.factor(vote_biden)))+ scale_fill_manual(name="Results for Biden",values = c("skyblue","tomato"),labels=c("Not vote for Biden","Vote for Biden"))+theme_minimal()+labs(title="Results for Biden", caption="Source: Democracy Fund + UCLA Nationscape")
+
+
+plt2<-ggplot(data = survey_data) + 
+  geom_bar(mapping = aes(x = sex, fill = as.factor(vote_trump)))+ scale_fill_manual(name="Results for Trump",values = c("skyblue","tomato"),labels=c("Not vote for Trump","Vote for Trump"))+theme_minimal()+labs(title="Results for Trump", caption="Source: Democracy Fund + UCLA Nationscape")
+
+grid.arrange(plt1, plt2, ncol = 2, top = textGrob("Figure 2: Boxplot of Sex and Voting", gp=gpar(fontsize=16)))
+
+
+plt3<-ggplot(data = survey_data) + 
+  geom_bar(mapping = aes(x = income_level, fill = as.factor(vote_biden)))+ scale_fill_manual(name="Vote choice",values = c("skyblue","tomato"),labels=c("Not vote for Biden","Vote for Biden"))+theme_minimal()+labs(title="Results for Biden", caption="Source: Democracy Fund + UCLA Nationscape")+ theme(axis.text.x = element_text(angle = 30, vjust = 0.4))
+
+plt4<-ggplot(data = survey_data) + 
+  geom_bar(mapping = aes(x = income_level, fill = as.factor(vote_trump)))+ scale_fill_manual(name="Vote choice",values = c("skyblue","tomato"),labels=c("Not vote for Trump","Vote for Trump"))+theme_minimal()+labs(title="Results for Trump", caption="Source: Democracy Fund + UCLA Nationscape")+ theme(axis.text.x = element_text(angle = 30, vjust = 0.4))
+par(mfrow=c(1,2))
+
+grid.arrange(plt3, plt4, ncol = 2, top = textGrob("Figure 3: Boxplot of Income and Voting", gp=gpar(fontsize=16)))
+
+
+plt5<- survey_data %>% ggplot() +
+  geom_count(mapping = aes(x = labforce, y = as.factor(vote_biden),color=as.factor(vote_biden)) )+ labs(title="Results for Biden", caption="Source: Democracy Fund + UCLA Nationscape",color="Vote Choice") +theme_minimal()+scale_colour_manual(values=c("skyblue","tomato"),labels=c("Not vote for Biden","Vote for Biden"))+ theme(axis.text.x = element_text(angle = 30, vjust = 0.4))
+
+
+plt6<- survey_data %>% ggplot() +
+  geom_count(mapping = aes(x = labforce, y = as.factor(vote_trump),color=as.factor(vote_trump)) )+ labs(title="Results for Trump", caption="Source: Democracy Fund + UCLA Nationscape",color="Vote Choice") +theme_minimal()+scale_colour_manual(values=c("skyblue","tomato"),labels=c("Not vote for Trump","Vote for Trump"))+ theme(axis.text.x = element_text(angle = 30, vjust = 0.4))
+grid.arrange(plt5, plt6, ncol = 2, top = textGrob("Figure 4: Mapping of Labforce and Voting", gp=gpar(fontsize=16)))
+
+
+plt7 <- survey_data %>% ggplot()+ geom_histogram(aes(age, fill = ..count..), bins = 20) + labs(title="Distribution of age for survey_data", caption="Source: Democracy Fund + UCLA Nationscape") + theme_classic()+scale_fill_gradient(low="#ffcccb", high="tomato")
+
+plt8 <- census_data %>% ggplot()+ geom_histogram(aes(age, fill = ..count..), bins = 20) + labs(title="Distribution of age for census_data", caption="Source: Democracy Fund + UCLA Nationscape") + theme_classic()+scale_fill_gradient(low="#ffcccb", high="tomato")
+
+grid.arrange(plt7, plt8, ncol = 2, top = textGrob("Figure 5: Distribution of Age", gp=gpar(fontsize=16)))
+
+```
+
+The data:survey_data that we use to build the model is from the Democracy Fund + UCLA Nationscape dataset released in August 2020. (Tausanovitch, Chris and Lynn Vavreck, 2020) This data is collected by LUCID, Inc which is the partner of Nationscape personnel. And they interviewed people from almost every congressional district, and mid-sized U.S. cities across the country to collect 318,697 observations. And we choose the 6479 observations’ data collected on June 25 2020 to build the model.
+ 
+And the data:census_data that we use the built model to predict the election results is from the American Community Survey data.(Erica Gardner, Tomas kimpel, 2015) This data is collected by Census Bureau in April 2020, they collected randomly sampled households’ data across the country. In our study, we use the 1,046,401 observations’ data from this dataset as the input of our model to predict the election results. For the survey_data datasets, the observations that are lack key features that we need in our model have been deleted since it might reduce the accuracy of the model, however, we should notice it also might create bias. But generally speaking, after the data clean process, the number of observations in the survey_data reduce from 6479 to 6030. And for the census_data, non-response does not exist in the dataset.
+
+In our model, we choose 6 predictors to predict the election results which is a binary variable, age, sex, whether or not in the labor force, race, education background, and income level.(citation survey dataset)(citation cenusu dataset) Age is numeric data we can directly get from the two data sets. From the Figure 5 the distribution of age we can see that the age in the survey_data is a right skew histogram which means the number of aged people’s data is small. However, the age in the census_data is more likely normally distributed centered at the age of around 65. Sex is binary data, in the data cleaning process, we maintain the consistency from both datasets. Labforce is also binary data, we divide the labforce data from the survey_data into binary data to match the census_data. The race is a categorical variable, the race has been classified more specifically in survey_data, thus we regroup the race from the survey_data to match the census_data. Education is also a categorical variable but with the opposite situation, we change the census_data to match the survey_data since the first one has been divided into more detail. Finally, the income level is a categorical variable that we create from the original data. For the survey_data, we divide their income into 4 parts according to the bottom line of their household income since the categorical data gives a range, the richest 25%, above the average but not the richest, below the average but not the lowest, and the lowest 25%. And the census_data we directly divide them into 4 parts by the quantiles.
+
+From the Figure 1, we can see that most of the people who are under 30 will choose not to vote for Trump, and there exists an extremely high support rate for Trump and will not vote for Biden for the people which is around 90. From the Figure 2, we can see that Biden is more popular in women and Trump is more popular in men, meanwhile the intersexual difference for Trump is much higher than for Biden. From the Figure 3, we can see that as people’s income increase, they are more likely to support Trump, and Trump’s approval rate among people with the lowest 25% income is rather low. The supporter for Biden is more evenly distributed in different income level, but people with high income gives a lower approval rate. From the Figure 4, we can see that people who are not in the labor force have a high probability that they will neither vote for Biden nor vote for Trump. This can be explained that people who do not have a job have a relatively small intention to participate in politics.
+
+
+# Model
+
+The purpose of our study is to predict the vote outcome of the 2020 American federal election in ACS dataset(include citation). We used multilevel regression and  post-stratification technique for this analysis. In the following sub-sections I will describe the model specifics and the calculation for the post-stratification process.
+
+## Model Specifics
+In the beginning, we tried to use the linear regression model for this analysis. We made the model for predicting the proportion of voters who will vote for Donald Trump and the proportion of voters who will vote for Joe Biden separately.  Since we have two models, the response variables for them is vote Biden or vote trump(1 for vote Biden or vote trump, 0 for not vote for them). For both models, we used the same six predictors: age, sex, race, education, labor force, income level to model the probability of voting for Donald Trump, and the probability of voting for Joe Biden. The age is a numeric variable and the other five predictors are categorical variables. However, we found that our response variable is binary which means a binary logistic regression model may be better. So we made two binary logistic linear regression models as well. We decided to use the Akaike information criterion (AIC) for testing which model is better for fitting our data. AIC uses the number of independent variables that are used to make a model and the maximum likelihood estimate of the model to get a value(cite). Here, the maximum likelihood estimate tells us how well the model reproduces the data. By comparing the AIC for the linear regression model and binary logistic regression model, we observed that the AIC for our two linear regression models are 8263 and 7843 and the AIC for two binary logistic regression models are 7873 and 7406. The smaller AIC value tells that the model fits the data better. Thus,  By comparing the AIC value, the binary logistic regression model would be a better model for our study. 
+Then, we used R(cite) to run two binary logistic regression models to model the proportion of voters who will vote for Joe Biden and the proportion of who will vote for Donald Trump separately based on the Nationscape Dataset(cite).  The equation below is the binary logistic regression model:
+$$\pi_i=Pr(Y_i=1|X_i=x_i)=\frac{exp(\beta_0+\beta_1x_i)}{1+exp(\beta_0+\beta_1x_i)}$$ 
+or 
+
+$$logit(\pi_i) = log(\frac{\pi_i}{1-\pi_i}) = \beta_0 + \beta_1x_i = \beta_0 + \beta_1 x_{i1} +...+\beta_q x_{iq}$$
+
+We assume that Y_i is a binary response variable for i = 1,...n and takes on value 0 or 1 with P(Y_i = 1) = pi_i. Suppose X is a set of explanatory variables, x_i is the observed value of the explanatory variables for observation i = 1,...q. From the above formula, we can also get: $$\frac{\pi}{1-\pi}=e^{\beta_0}e^{\beta_1x_1}...e^{\beta_q x_q} $$
+Then the $\beta_0$ is the baseline odds and $\beta_1$ can be interpreted as holding predictors constant, a one-unit increase in $x_1$ increases the probability of voting for Donald Trump or Joe Biden by a factor of $e^{\beta_1}$.
+
+
+```{r}
+# Creating the Model
+model1 <- lm(vote_biden ~ age+sex+labforce+race+education+income_level, data=survey_data)
+AIC(model1)
+
+model_biden <- glm(vote_biden ~ age+sex+labforce+race +education+income_level, data=survey_data, family="binomial")
+
+model_trump <- glm(vote_trump ~ age+sex+labforce+race +education+income_level, data=survey_data, family="binomial")
+
+
+# Model Results (to Report in Results section)
+# summary(model)
+# OR
+# broom::tidy(model)
+
+```
+
+## Post-Stratification 
+
+Multilevel regression and post-stratification (MRP) combines two statistical techniques to
+determine the relationship between the response variable of our interest and predictors we chose. Unlike the normal multilevel regression analysis, we add a post-stratification process base on the previous multilevel regression analysis. We used the sample data to train a regression model and then we would use this trained model to predict the outcome in the population dataset which would be a large population. The MRP requires the data to be demographic. In our study, we chose six predictors which are mentioned in the previous section as the key demographic features of the sample. However, MRP also has some limitations. As we mentioned before, the MRP requires the data to be demographic. Also, if the sample data is not sufficient enough or the demographic predictors are not enough, the outcome would be biased and can even be failed. In our sample data Nationscape Dataset, we could find some key demographic features as our predictors, so we chose to use MRP for our analysis.
+
+In the post-stratification process, in order to estimate the proportion of voters who will vote for Donald Trump and the proportion of voters who will vote for Joe Biden. We performed a post-stratification analysis on the ACS dataset(citation). We created many cells based on different age, race, sex, education, labor force, and income level. Performing the model described in the above section, we estimated the proportion of voters in each cell. Then, we calculate the proportion of voters estimate for each cell by using the respective population size of that cell and sum those values and divide that by the whole population.
+
+```{r}
+
+# Here I will perform the post-stratification calculation
+census_data$estimate <-
+  model_biden %>%
+  predict(newdata = census_data, type="response")
+census_data
+census_data %>%
+  mutate(alp_predict_prop = estimate*n) %>%
+  summarise(win_prob = sum(alp_predict_prop)/sum(n))
+
+# Here I will perform the post-stratification calculation
+census_data$estimate <-
+  model_trump %>%
+  predict(newdata = census_data, type="response")
+census_data
+census_data %>%
+  mutate(alp_predict_prop = estimate*n) %>%
+  summarise(win_prob = sum(alp_predict_prop)/sum(n))
+```
+
+
+# Results
+
+```{r}
+library(kableExtra)
+kable(summary(model_biden)$coefficients, caption="Summary of Biden Model Results", digits=3,format="markdown")
+kable(summary(model_trump)$coefficients, caption="Summary of Trump Model Results", digits=3,format="markdown")
+vote<-matrix(c(0.400,0.423),ncol=1,byrow=TRUE)
+colnames(vote)<-c("Probability")
+rownames(vote)<-c("vote for Biden","Vote for Trump")
+table<-as.table(vote)
+kable(table, caption="Summary of prediction of vote outcome ", digits=3, format="markdown")
+
+```
+
+Using a binary logistic model, we got two summary statistics tables and the probability of voting for Biden and Trump. The data “vote for Biden” was summarized in the first table. In the Pr category, the EducationAssociate degree has the highest value which is 0.998 while age, education level and so on have relatively large p-value. Only the P-value for the sexmale, labor force and races category are lower than 0.05. The std.error values are all lower than 0.65 except for the std.error for educationMiddle School category. The maximum z value is 6.244 which is from the raceBlack category while the minimum is -5.489 which is from the SexMale category. The coefficients for the categories are half positive and half negative. The maximum value is 1.594 which is from the race Japanese category. The minimum value for the coefficient is -0.599 which is from the EducationCompleted some high school category. The data for “vote for Trump” was summarized in the second table. In the Pr category, the Education Doctorate degree has the highest value which is 0.649 while education level and so on have relatively large p-value. Only the P-value for the age, sexmale, labor force and so on are lower than 0.05. The std.error values are all lower than 0.65 except for the std.error for educationMiddle School category. The maximum z value is 7.693 which is from the Age category while the minimum is -6.891 which is from the raceBlack category. The coefficients for the categories are mostly negative. The maximum coefficient is 0.599 which is from the income75%-100% category. The minimum value for the coefficient is -1.820 which is from the raceBlack category. Finally, The probability we got for “vote for Biden” is 0.400 and the probability we got for “vote for Trump” is 0.423.
+
+
+# Discussion
+
+In this model, the p-value helps us to test the null hypothesis so that we can indicate whether the factors have a correlation with our predictor in the whole population. The null hypothesis for our model is that there is no correlation with our response variable. If the p-value is smaller than 0.05, it rejects the null hypothesis so there may be a correlation between that factor and our response variable. The smaller the p-value, the stronger evidence for rejecting the null hypothesis. However, if the p-value is greater than 0.05, it supports the null hypothesis, which means that there may not be a correlation between the factor and our response variable. In this survey, the p-value of education level and white is over 0.05 so that it is not significant. The p-value of age in the Trump model result is less than 0.05 while the one in Biden is more than 0.05. It shows that age has a significant effect on Trump and not significant effect on Biden. Each one-unit change in age of the Trump model will increase the log odds of getting admitted by 0.0015. In the sexmale catagory, the p-value of Trump and Biden model are less than 0.05 which has significant effect on both of them.
+
+Each unit change in sexmale in the Trump model increases the log odds of getting admitted by 0.376 while each unit decrease in sexmale in the Biden model decreases the log odds of getting admitted by -0.305. It shows that females are likely to vote for Biden while male is likely to vote for Trump. In the Chinese and nergo category, the p-value of Trump and Biden model are less than 0.05 which has significant effect on both of them. Each unit change in Chinese and nergo category in the Trump model decreases the log odds of getting admitted by -1.308 and -1.820 correspondingly while each unit change in Chinese and nergo in the Biden model increases the log odds of getting admitted by 0.953 and 1.591. It shows that Chinese and nergo are more likely to vote for biden. For the labforce category, the p-value of Trump and Biden model are less than 0.05 which has significant effect on both of them. Each unit change in labforce category in the Trump model increases the log odds of getting admitted by 0.210 while each unit change in labforce category in the Biden model decreases the log odds of getting admitted by -0.138.
+
+## Weaknesses
+
+- Some weaknesses exist in the data analysis part. While we are cleaning the data, the na which refers to non- response questions was deleted so that bias would exist in the result. In the race section, the “ three or more major races” and "two major races" were deleted. While analysing the labforce, there are several original options such as Full- time employed, retired, students and so on. However, only two options which are "yes, in the labor force" and "no, not in the labor force" were used because we used binary models to predict the result. The predicted result could be biased. In the income_level, the personal income and household income are converted from numeric to percentile(“0%-25%", "25%-50%", "50%-75%", "75%-100%"). When personal income and household income are directly compared, the result could be biased.
+
+- The data set is lacking some demographic predictor, thus some important parts of the model were misspecified. For example, the data are not divided by states. Since there are 56 states in the US, data will be differ from states. If this part of data is not included, bias will exist. Also, the variable marriage is not mentioned in the survey data. Marriage is a possible variable to predict the winner of the president election. The data set was recorded in June 2020 and it has been a long time until now.
+
+-In this survey, 6000 questionnaire samples were used to predict the result of the election. However, the overall sample data is more than 1000000, the insufficient data may result in the bias.
+
+## Next Steps
+
+In the future, the model and data need to be improved. The marriage status needs to be added to the data set. Also, the data from each state should be added to reduce bias. Only one day of survey data which is on June 25th in 2020 was used to predict the result of the election. More data needs to be selected so that the result could be more accurate. Furthermore, more models can be used to predict the result such as mixed effects logistic regression, Bayesian Generalized and non- Linear Multivariate Multilevel Model. We can compare the results from different models to find the more possible result.
+
+# Appendix
+Code and data supporting this analysis is available at: "https://github.com/zhoufanx/STA304-problem-set4".
+
+# References
+[1] Choi, Matthew (October 31, 2019). "Trump, a symbol of New York, is officially a Floridian now". Politico. Retrieved October 31, 2019.
+[2] "3 U.S.C. § 7 – U.S. Code – Unannotated Title 3. The President § 7. Meeting and vote of electors", FindLaw.com
+[3] Tausanovitch, Chris and Lynn Vavreck. 2020. Democracy Fund + UCLA Nationscape, October 10-17, 2019 (version 20200814). https://www.voterstudygroup.org/downloads?key=8c1f266c-976d-493d-a6d1-4ee560f83785.
+[4] Erica Gardner, Tomas kimpel. 2015. American communication survey. https://www.census.gov/programs-surveys/acs
+
+Yihui Xie (2014) knitr: A Comprehensive Tool for Reproducible Research in R. In Victoria Stodden, Friedrich
+Leisch and Roger D. Peng, editors, Implementing Reproducible Computational Research. Chapman and
+Hall/CRC. ISBN 978-1466561595
+
+R Core Team. 2020. R: A Language and Environment for Statistical Computing. Vienna, Austria: R
+Foundation for Statistical Computing. https://www.R-project.org/.
+
+Wickham, Hadley, Mara Averick, Jennifer Bryan, Winston Chang, Lucy D’Agostino McGowan, Romain
+François, Garrett Grolemund, et al. 2019. “Welcome to the tidyverse.” Journal of Open Source Software 4
+(43): 1686. https://doi.org/10.21105/joss.01686.
+
+Zhu, Hao. 2020. KableExtra: Construct Complex Table with ’Kable’ and Pipe Syntax. https://CRAN.Rproject.
+org/package=kableExtra.
+17
